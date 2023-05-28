@@ -2,12 +2,11 @@ import { FastifyPluginAsyncJsonSchemaToTs } from '@fastify/type-provider-json-sc
 import { idParamSchema } from '../../utils/reusedSchemas';
 import { createPostBodySchema, changePostBodySchema } from './schema';
 import type { PostEntity } from '../../utils/DB/entities/DBPosts';
+import validator from 'validator';
 
-const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
-  fastify
-): Promise<void> => {
-  fastify.get('/', async function (request, reply)
-    : Promise<PostEntity[]> {
+const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify)
+  : Promise<void> => {
+  fastify.get('/', async function (request, reply): Promise<PostEntity[]> {
     return this.db.posts.findMany();
   });
 
@@ -21,8 +20,10 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     async function (request, reply)
       : Promise<PostEntity> {
       const {id} = request.params;
-      const res = await this.db.posts.findOne({key: 'id', equals: id});
-      if(res === null) throw reply.code(404)
+      const post = await this.db.posts.findOne({key: 'id', equals: id});
+      const users = await this.db.users.findMany();
+      const checkUser = users.find(user=>user.id === post?.userId);
+      if(post === null || !validator.isUUID(id) || checkUser===undefined) throw reply.code(404)
       return this.db.posts.findOne({key: 'id', equals: id}) as Promise<PostEntity>;
     }
   );
@@ -51,8 +52,8 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     async function (request, reply)
       : Promise<PostEntity> {
       const {id} = request.params;
-      const res = await this.db.posts.findOne({key: 'id', equals: id});
-      if(res === null) throw reply.code(400)
+      const post = await this.db.posts.findOne({key: 'id', equals: id});
+      if(post === null) throw reply.code(400)
       return this.db.posts.delete(id);
     }
   );
@@ -69,11 +70,12 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       : Promise<PostEntity> {
       const {id} = request.params;
       const updPost = request.body;
-      const res = await this.db.posts.findOne({key: 'id', equals: id});
-      if(res === null) throw reply.code(404)
-      return this.db.posts.change(id, {...res, ...updPost});
+      const post = await this.db.posts.findOne({key: 'id', equals: id});
+      if(post === null) throw reply.code(400)
+      return this.db.posts.change(id, {...post, ...updPost});
     }
   );
 };
+
 
 export default plugin;
