@@ -2,6 +2,7 @@ import { FastifyPluginAsyncJsonSchemaToTs } from '@fastify/type-provider-json-sc
 import { idParamSchema } from '../../utils/reusedSchemas';
 import { createProfileBodySchema, changeProfileBodySchema } from './schema';
 import type { ProfileEntity } from '../../utils/DB/entities/DBProfiles';
+import validator from "validator";
 
 const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
   fastify
@@ -21,6 +22,8 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     async function (request, reply)
       : Promise<ProfileEntity> {
       const { id } = request.params;
+      const res = await this.db.posts.findOne({key: 'id', equals: id});
+      if(res === null) throw reply.code(404)
       const profile = this.db.profiles.findOne({key: 'id', equals: id}) as Promise<ProfileEntity>;
       return profile;
     }
@@ -36,6 +39,9 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     async function (request, reply)
       : Promise<ProfileEntity> {
       const profile = request.body;
+      const valid=validator.isUUID(profile.userId)
+        && ['business', 'basic'].includes(profile.memberTypeId)
+      if (!valid) throw reply.code(400)
       return this.db.profiles.create(profile);
     }
   );
@@ -50,6 +56,8 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     async function (request, reply)
       : Promise<ProfileEntity> {
       const { id } = request.params;
+      const res = await this.db.profiles.findOne({key:'id',equals:id})
+      if (res===null) throw reply.code(400)
       return this.db.profiles.delete(id);
     }
   );
@@ -66,7 +74,9 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       : Promise<ProfileEntity> {
       const { id } = request.params;
       const updProfile = request.body;
-      return this.db.profiles.change(id, updProfile)
+      const res = await this.db.profiles.findOne({key:'id',equals:id})
+      if (res===null) throw reply.code(400)
+      return this.db.profiles.change(id, {...res, ...updProfile})
     }
   );
 };

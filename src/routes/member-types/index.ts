@@ -22,6 +22,8 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     async function (request, reply)
       : Promise<MemberTypeEntity> {
       const {id} = request.params;
+      const res = await this.db.memberTypes.findOne({key: 'id', equals: id});
+      if(res === null) reply.callNotFound();
       return this.db.memberTypes.findOne({key: 'id', equals: id}) as Promise<MemberTypeEntity>
     }
   );
@@ -38,7 +40,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       : Promise<MemberTypeEntity> {
       const {id} = request.params;
       const updMember = request.body;
-      return this.db.memberTypes.change(id, updMember);
+      const res = await this.db.memberTypes.findOne({key: 'id', equals: id});
+      if(res === null) throw reply.code(400);
+      const obj =  {...res, ...updMember}
+      Reflect.deleteProperty(obj, 'id');
+      return this.db.memberTypes.change(id, obj);
     }
   );
 };

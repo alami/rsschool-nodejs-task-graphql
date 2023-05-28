@@ -23,6 +23,31 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "member-types/id",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:3000/member-types/:id",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"member-types",
+						":id"
+					],
+					"variable": [
+						{
+							"key": "id",
+							"value": "basic"
+						}
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }
