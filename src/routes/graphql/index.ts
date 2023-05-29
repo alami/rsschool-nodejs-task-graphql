@@ -25,17 +25,16 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
           subscribedToUserIds: {
             type: new GraphQLList(GraphQLString)
           },
-          userPost: {
-            type: new GraphQLList(PostsType),
-            async resolve(parent, args, contextValue, info) {
-              return contextValue.db.posts.findMany({key: 'userId', equals: parent.id})
-            }
-          },
-
           userProfile: {
             type: new GraphQLList(ProfilesType),
             async resolve(parent, args, contextValue, info) {
               return contextValue.db.profiles.findMany({key: 'userId', equals: parent.id})
+            }
+          },
+          userPost: {
+            type: new GraphQLList(PostsType),
+            async resolve(parent, args, contextValue, info) {
+              return contextValue.db.posts.findMany({key: 'userId', equals: parent.id})
             }
           },
           userMemberType: {
@@ -45,6 +44,13 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
               return contextValue.db.memberTypes.findOne({key: 'id', equals: profiles || '' })
             }
           },
+          subscribedToUser: {
+            type: new GraphQLList(UserSubscribedToType),
+            async resolve(parent, args, contextValue, info) {
+              const userSub = (await contextValue.db.users.findMany()).filter((user:UserEntity)=> parent.subscribedToUserIds.includes(user.id))
+              return userSub
+            }
+          },
           userSubscribedTo: {
             type: new GraphQLList(UserSubscribedToType),
             async resolve(parent, args, contextValue, info) {
@@ -52,13 +58,6 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
               return userSub
             }
           },
-          subscribedToUser: {
-            type: new GraphQLList(UserSubscribedToType),
-            async resolve(parent, args, contextValue, info) {
-              const userSub = (await contextValue.db.users.findMany()).filter((user:UserEntity)=> parent.subscribedToUserIds.includes(user.id))
-              return userSub
-            }
-          }
         }),
       })
       const UserSubscribedToType = new GraphQLObjectType({
@@ -79,15 +78,6 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
           userId: { type: GraphQLString },
         }),
       })
-
-      const MemberTypes = new GraphQLObjectType({
-        name: 'MemberTypes',
-        fields: () => ({
-          id: { type: GraphQLString },
-          discount: { type: GraphQLInt },
-          monthPostsLimit: { type: GraphQLInt }
-        }),
-      })
       const ProfilesType = new GraphQLObjectType({
         name: 'Profiles',
         fields: () => ({
@@ -102,28 +92,29 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
           memberTypeId: { type: GraphQLString }
         }),
       })
+      const MemberTypes = new GraphQLObjectType({
+        name: 'MemberTypes',
+        fields: () => ({
+          id: { type: GraphQLString },
+          discount: { type: GraphQLInt },
+          monthPostsLimit: { type: GraphQLInt }
+        }),
+      })
       const Query = new GraphQLObjectType({
         name: 'query',
         fields: {
-          user: {
-            type: UsersType,
-            args: { id: { type: GraphQLID } },
-            resolve(parent, args, contextValue, info) {
-              return contextValue.db.users.findOne({key: 'id', equals: args.id!})
-            },
-
-          },
           users: {
             type: new GraphQLList(UsersType),
             async resolve(parent, args, contextValue, info) {
               return contextValue.db.users.findMany()
             }
           },
-          posts: {
-            type: new GraphQLList(PostsType),
-            resolve(parent, args, contextValue) {
-              return contextValue.db.posts.findMany()
-            }
+          user: {
+            type: UsersType,
+            args: { id: { type: GraphQLID } },
+            resolve(parent, args, contextValue, info) {
+              return contextValue.db.users.findOne({key: 'id', equals: args.id!})
+            },
           },
           post: {
             type: PostsType,
@@ -131,6 +122,12 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
             resolve(parent, args, contextValue) {
               return contextValue.db.posts.findOne({key: 'id', equals: args.id!})
             },
+          },
+          posts: {
+            type: new GraphQLList(PostsType),
+            resolve(parent, args, contextValue) {
+              return contextValue.db.posts.findMany()
+            }
           },
           profile: {
             type: ProfilesType,
@@ -145,6 +142,12 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
               return contextValue.db.profiles.findMany()
             }
           },
+          memberTypes: {
+            type: new GraphQLList(MemberTypes),
+            resolve(parent, args, contextValue) {
+              return contextValue.db.memberTypes.findMany()
+            }
+          },
           memberType: {
             type: MemberTypes,
             args: { id: { type: new GraphQLNonNull(GraphQLString) } },
@@ -152,21 +155,6 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
               return contextValue.db.memberTypes.findOne({key: 'id', equals: args.id})
             },
           },
-          memberTypes: {
-            type: new GraphQLList(MemberTypes),
-            resolve(parent, args, contextValue) {
-              return contextValue.db.memberTypes.findMany()
-            }
-          },
-        }
-      })
-
-      const CreateUserType = new GraphQLInputObjectType({
-        name: 'CreateUserType',
-        fields: {
-          firstName: { type: new GraphQLNonNull(GraphQLString) },
-          lastName: { type: new GraphQLNonNull(GraphQLString) },
-          email: { type: new GraphQLNonNull(GraphQLString) },
         }
       })
       const CreatePostType = new GraphQLInputObjectType({
@@ -175,6 +163,14 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
           title: { type: new GraphQLNonNull(GraphQLString) },
           content: { type: new GraphQLNonNull(GraphQLString) },
           userId: { type: new GraphQLNonNull(GraphQLID) },
+        }
+      })
+      const CreateUserType = new GraphQLInputObjectType({
+        name: 'CreateUserType',
+        fields: {
+          firstName: { type: new GraphQLNonNull(GraphQLString) },
+          lastName: { type: new GraphQLNonNull(GraphQLString) },
+          email: { type: new GraphQLNonNull(GraphQLString) },
         }
       })
       const CreateProfileType = new GraphQLInputObjectType({
@@ -190,7 +186,15 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
           memberTypeId: { type: new GraphQLNonNull(GraphQLString) }
         }
       })
-
+      const UpdatePostType = new GraphQLInputObjectType({
+        name: 'UpdatePostType',
+        fields: {
+          id: { type: GraphQLID },
+          title: { type: GraphQLString },
+          content: { type: GraphQLString },
+          userId: { type: GraphQLID },
+        }
+      })
       const UpdateUserType = new GraphQLInputObjectType({
         name: 'UpdateUserType',
         fields: {
@@ -200,13 +204,12 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
           email: { type: GraphQLString },
         }
       })
-      const UpdatePostType = new GraphQLInputObjectType({
-        name: 'UpdatePostType',
+      const UpdateMemberType = new GraphQLInputObjectType({
+        name: 'UpdateMemberType',
         fields: {
-          id: { type: GraphQLID },
-          title: { type: GraphQLString },
-          content: { type: GraphQLString },
-          userId: { type: GraphQLID },
+          id: { type: GraphQLString },
+          monthPostsLimit: { type: GraphQLInt },
+          discount: { type: GraphQLInt }
         }
       })
       const UpdateProfileType = new GraphQLInputObjectType({
@@ -223,12 +226,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
           memberTypeId: { type: GraphQLString }
         }
       })
-      const UpdateMemberType = new GraphQLInputObjectType({
-        name: 'UpdateMemberType',
+      const SubscribeType = new GraphQLInputObjectType({
+        name: 'SubscribeType',
         fields: {
           id: { type: GraphQLString },
-          monthPostsLimit: { type: GraphQLInt },
-          discount: { type: GraphQLInt }
+          userId: { type: GraphQLID }
         }
       })
       const UnSubscribeType = new GraphQLInputObjectType({
@@ -238,23 +240,9 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
           userId: { type: GraphQLID }
         }
       })
-      const SubscribeType = new GraphQLInputObjectType({
-        name: 'SubscribeType',
-        fields: {
-          id: { type: GraphQLString },
-          userId: { type: GraphQLID }
-        }
-      })
       const Mutation = new GraphQLObjectType({
         name: 'mutation',
         fields: {
-          createUser: {
-            type: UsersType,
-            args: { input: {type: CreateUserType}},
-            async resolve(parent, args, contextValue) {
-              return contextValue.db.users.create(args.input)
-            }
-          },
           createPost: {
             type: ProfilesType,
             args: { input: {type: CreatePostType}},
@@ -262,11 +250,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
               return contextValue.db.posts.create(args.input)
             }
           },
-          createProfile: {
-            type: ProfilesType,
-            args: {input: {type: CreateProfileType}},
-            resolve(parent, args, contextValue) {
-              return contextValue.db.profiles.create(args.input)
+          createUser: {
+            type: UsersType,
+            args: { input: {type: CreateUserType}},
+            async resolve(parent, args, contextValue) {
+              return contextValue.db.users.create(args.input)
             }
           },
           updateUser: {
@@ -277,20 +265,19 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
               return contextValue.db.users.change(args.input.id, {...user, ...args.input})
             }
           },
+          createProfile: {
+            type: ProfilesType,
+            args: {input: {type: CreateProfileType}},
+            resolve(parent, args, contextValue) {
+              return contextValue.db.profiles.create(args.input)
+            }
+          },
           updateProfile: {
             type: ProfilesType,
             args: { input: {type: UpdateProfileType}},
             async resolve(parent, args, contextValue) {
               const profile = await contextValue.db.profiles.findOne({key:'id', equals: args.input.id})
               return contextValue.db.profiles.change(args.input.id, {...profile, ...args.input})
-            }
-          },
-          updatePost: {
-            type: PostsType,
-            args: { input: {type: UpdatePostType}},
-            async resolve(parent, args, contextValue) {
-              const post = await contextValue.db.posts.findOne({key:'id', equals: args.input.id})
-              return contextValue.db.posts.change(args.input.id, {...post, ...args.input})
             }
           },
           updateMemberType: {
@@ -308,6 +295,14 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
               const subUser = await contextValue.db.users.findOne({key: 'id', equals: args.input.userId})
               subUser.subscribedToUserIds.push(args.input.id)
               return contextValue.db.users.change(args.input.userId, subUser)
+            }
+          },
+          updatePost: {
+            type: PostsType,
+            args: { input: {type: UpdatePostType}},
+            async resolve(parent, args, contextValue) {
+              const post = await contextValue.db.posts.findOne({key:'id', equals: args.input.id})
+              return contextValue.db.posts.change(args.input.id, {...post, ...args.input})
             }
           },
           unsubscribeFrom: {
