@@ -1,8 +1,8 @@
 ## Assignment: Graphql
 ### Tasks:
 1. Add logic to the restful endpoints (users, posts, profiles, member-types folders in ./src/routes).  
-   1.1. npm run test - 100%  
-2. Add logic to the graphql endpoint (graphql folder in ./src/routes).  
+   1.1. npm run test - 100%  <br>&nbsp;
+2. **Please see all queries ans mutation for rgis section in the attached Postman Collection<br>GraphQL_rsNode.postman_collection.json**<br><br>Add logic to the graphql endpoint (graphql folder in ./src/routes).  
 Constraints and logic for gql queries should be done based on restful implementation.  
 For each subtask provide an example of POST body in the PR.  
 All dynamic values should be sent via "variables" field.  
@@ -74,3 +74,8 @@ If you have chosen a non-default gql environment, then the connection of some fu
 Limit the complexity of the graphql queries by their depth with "graphql-depth-limit" package.  
 E.g. User can refer to other users via properties `userSubscribedTo`, `subscribedToUser` and users within them can also have `userSubscribedTo`, `subscribedToUser` and so on.  
 Your task is to add a new rule (created by "graphql-depth-limit") in [validation](https://graphql.org/graphql-js/validation/) to limit such nesting to (for example) 6 levels max.
+
+```
+
+ 
+```
